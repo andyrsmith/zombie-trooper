@@ -28,6 +28,12 @@ struct Movement {
     last_movement: Direction
 }
 
+#[derive(Component)]
+struct Distance {
+    distance_travel: i32,
+    distance_despawn: i32
+}
+
 const PLAYER_SIZE: Vec3 = Vec3::new(30.0, 30.0, 0.0);
 const PLAYER_COLOR: Color = Color::rgb(0.3, 0.3, 0.7);
 const ZOMBIE_RADIUS: f32 = 15.;
@@ -117,6 +123,10 @@ fn player_shoot(mut commands: Commands,
             Bullet,
             Movement {
                 last_movement: player_movement.last_movement
+            },
+            Distance {
+                distance_travel: 0,
+                distance_despawn: 100
             }
         ));
         }
@@ -124,8 +134,9 @@ fn player_shoot(mut commands: Commands,
 
 }
 
-fn move_bullet(mut query: Query<(&mut Transform, &mut Movement), With<Bullet>>) {
-    for (mut transform, movement) in &mut query {
+fn move_bullet(mut query: Query<(&mut Transform, &mut Movement, &mut Distance), With<Bullet>>) {
+    for (mut transform, movement, mut distance_query) in &mut query {
+        distance_query.distance_travel += 1;
         if movement.last_movement == Direction::DOWN {
             transform.translation.y -= 1.0;
         } else if movement.last_movement == Direction::LEFT {
@@ -194,11 +205,23 @@ fn zombie_bullet_collision(
     }
 
 }
+
+fn despawn_bullet(
+    mut commands: Commands,
+    bullet_query: Query<(Entity, &Distance), With<Bullet>>
+) {
+    for(bullet_entity, bullet_distance) in &bullet_query {
+        if(bullet_distance.distance_travel > bullet_distance.distance_despawn) {
+            commands.entity(bullet_entity).despawn();
+        }
+    }
+
+}
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_systems(Startup, setup_game)
-        .add_systems(Update, (move_player, player_shoot, move_bullet, move_zombies, zombie_player_collision, zombie_bullet_collision))
+        .add_systems(Update, (move_player, player_shoot, move_bullet, move_zombies, zombie_player_collision, zombie_bullet_collision, despawn_bullet))
         .run();
 }
 
