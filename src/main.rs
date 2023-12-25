@@ -1,4 +1,5 @@
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
+use std::f32::consts::PI;
 
 #[derive(PartialEq, Clone, Copy)]
 enum Direction {
@@ -25,7 +26,7 @@ struct Bullet;
 
 #[derive(Component)]
 struct Movement {
-    last_movement: Direction
+    last_movement: Direction,
 }
 
 #[derive(Component)]
@@ -43,19 +44,15 @@ const PLAYER_SPEED: f32 = 100.0;
 
 // ResMut is a mutable resource
 
-fn setup_game(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>, mut materials: ResMut<Assets<ColorMaterial>>) {
+fn setup_game(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>, mut materials: ResMut<Assets<ColorMaterial>>, asset_server: Res<AssetServer>) {
     commands.spawn(Camera2dBundle::default());
 
     commands.spawn((
         SpriteBundle {
-            transform: Transform { 
-                translation: Vec3::new(0.0,0.0,10.0),
-                 scale:PLAYER_SIZE,
-                ..default() 
-            },
-            sprite: Sprite { 
-                color: PLAYER_COLOR, 
-                ..default() 
+            texture: asset_server.load("sprites/manRed_gun.png"),
+            sprite: Sprite {
+                flip_x: true,
+                ..default()
             },
             ..default()
         },
@@ -66,9 +63,8 @@ fn setup_game(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>, mut mate
         Collider,
     ));
 
-    commands.spawn((MaterialMesh2dBundle {
-        mesh: meshes.add(shape::RegularPolygon::new(ZOMBIE_RADIUS, 6).into()).into(),
-        material: materials.add(ColorMaterial::from(Color::GREEN)),
+    commands.spawn((SpriteBundle {
+        texture: asset_server.load("sprites/zoimbie1_hold.png"),
         transform: Transform::from_translation(Vec3::new(150., 0., 0.)),
         ..default()
     },
@@ -80,29 +76,38 @@ fn move_player(keyboard_input: Res<Input<KeyCode>>, mut query: Query<(&mut Trans
     if let Ok((mut player_transform, mut player_movement)) = query.get_single_mut() {
         let mut xdirection = 0.0;
         let mut ydirection = 0.0;
+        let mut rotation = 0.0;
         
         if keyboard_input.pressed(KeyCode::A) {
             xdirection -= 1.0;
             player_movement.last_movement = Direction::LEFT;
+            rotation = 0.0;
+            player_transform.rotation = Quat::from_rotation_z(rotation);
         }
     
         if keyboard_input.pressed(KeyCode::D) {
             xdirection += 1.0;
             player_movement.last_movement = Direction::RIGHT;
+            rotation = PI;
+            player_transform.rotation = Quat::from_rotation_z(rotation);
         }
     
         if keyboard_input.pressed(KeyCode::S) {
             ydirection -= 1.0;
             player_movement.last_movement = Direction::DOWN;
+            rotation = PI / 2.;
+            player_transform.rotation = Quat::from_rotation_z(rotation);
         }
     
         if keyboard_input.pressed(KeyCode::W) {
             ydirection += 1.0;
             player_movement.last_movement = Direction::UP;
+            rotation = (3. * PI) / 2.;
+            player_transform.rotation = Quat::from_rotation_z(rotation);
         }
-    
         player_transform.translation.y = player_transform.translation.y + ydirection;
         player_transform.translation.x = player_transform.translation.x + xdirection;
+
     }
 
 }
@@ -122,7 +127,7 @@ fn player_shoot(mut commands: Commands,
             },
             Bullet,
             Movement {
-                last_movement: player_movement.last_movement
+                last_movement: player_movement.last_movement,
             },
             Distance {
                 distance_travel: 0,
@@ -149,25 +154,47 @@ fn move_bullet(mut query: Query<(&mut Transform, &mut Movement, &mut Distance), 
     }
 }
 
-fn move_zombies(mut player_query: Query<&mut Transform, (With<Player>, Without<Zombie>)>, mut zombie_query: Query<&mut Transform, (With<Zombie>, Without<Player>)>) {
-    if let Ok(player_transform) = player_query.get_single_mut() {
+fn move_zombies(mut player_query: Query<(&Transform, &Movement), (With<Player>, Without<Zombie>)>, mut zombie_query: Query<&mut Transform, (With<Zombie>, Without<Player>)>) {
+
+    if let Ok((player_transform, player_movement)) = player_query.get_single_mut() {
         for mut transform in &mut zombie_query {
             const ZOMBIE_SPEED: f32 = 0.5;
             if player_transform.translation.x > transform.translation.x {
                 transform.translation.x += ZOMBIE_SPEED;
             } else {
                 transform.translation.x -= ZOMBIE_SPEED;
+
             }
     
             if player_transform.translation.y > transform.translation.y {
                 transform.translation.y += ZOMBIE_SPEED;
+
+
             } else {
                 transform.translation.y -= ZOMBIE_SPEED;
             }
+
+            let diff_x = transform.translation.x - player_transform.translation.x;
+            let diff_y = transform.translation.y - player_transform.translation.y;
+            let mut zombie_rotation = 0.0;
+            if diff_x.abs() > diff_y.abs() {
+                if diff_x > 0.0 {
+                    zombie_rotation = PI;
+                } else {
+                    zombie_rotation = 0.0;
+                }
+            } else {
+                if diff_y > 0.0 {
+                    zombie_rotation = (3. * PI) / 2.;
+                } else {
+                    zombie_rotation = PI / 2.;
+                }
+            }
+
+            transform.rotation = Quat::from_rotation_z(zombie_rotation);
         }
           
     }
-
 }
 
 fn zombie_player_collision(
