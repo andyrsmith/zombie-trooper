@@ -1,0 +1,40 @@
+{
+    "Map/SizeTest": {
+        "height": 4300,
+        "width": 2
+    },
+    "activeFile": "tilemapset.tmx",
+    "expandedProjectPaths": [
+    ],
+    "fileStates": {
+        "tilemapset.tmx": {
+            "scale": 0.3285416666666666,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 961.826252377933,
+                "y": 642.2320862396958
+            }
+        },
+        "tilemapset.tmx#tiles": {
+            "scaleInDock": 1
+        }
+    },
+    "last.exportedFilePath": "/home/andy/src/github/zombie-hunter/assets/tilemaps",
+    "last.imagePath": "/home/andy/src/github/zombie-hunter/assets/spritesheet",
+    "map.lastUsedExportFilter": "CSV files (*.csv)",
+    "map.lastUsedFormat": "tmx",
+    "map.tileHeight": 64,
+    "map.tileWidth": 64,
+    "openFiles": [
+        "tilemapset.tmx"
+    ],
+    "project": "level1.tiled-project",
+    "recentFiles": [
+        "tilemapset.tmx"
+    ],
+    "tileset.embedInMap": true,
+    "tileset.tileSize": {
+        "height": 64,
+        "width": 64
+    }
+}

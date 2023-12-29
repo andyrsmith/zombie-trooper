@@ -1,4 +1,5 @@
-use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
+use bevy::{prelude::*, sprite::MaterialMesh2dBundle, render::camera};
+use bevy_ecs_tilemap::prelude::*;
 use std::f32::consts::PI;
 
 #[derive(PartialEq, Clone, Copy)]
@@ -35,6 +36,9 @@ struct Distance {
     distance_despawn: i32
 }
 
+#[derive(Component)]
+struct CameraMaker;
+
 const PLAYER_SIZE: Vec3 = Vec3::new(30.0, 30.0, 0.0);
 const PLAYER_COLOR: Color = Color::rgb(0.3, 0.3, 0.7);
 const ZOMBIE_RADIUS: f32 = 15.;
@@ -44,12 +48,65 @@ const PLAYER_SPEED: f32 = 100.0;
 
 // ResMut is a mutable resource
 
-fn setup_game(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>, mut materials: ResMut<Assets<ColorMaterial>>, asset_server: Res<AssetServer>) {
-    commands.spawn(Camera2dBundle::default());
+fn setup_game(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>, 
+    mut materials: ResMut<Assets<ColorMaterial>>, 
+    asset_server: Res<AssetServer>
+) {
+
+    commands.spawn((Camera2dBundle::default(),
+    CameraMaker));
+    let texture_handle: Handle<Image> = asset_server.load("spritesheet/spritesheet_tiles.png");
+
+    let map_size = TilemapSize { x: 64, y: 64 };
+    
+    let tilemap_entity = commands.spawn_empty().id();
+
+    let mut tile_storage = TileStorage::empty(map_size);
+
+    for x in 0..map_size.x {
+        for y in 0..map_size.y {
+            let tile_pos = TilePos { x, y };
+            let tile_entity = commands
+                .spawn(TileBundle {
+                    position: tile_pos,
+                    tilemap_id: TilemapId(tilemap_entity),
+                    ..Default::default()
+                })
+                .id();
+            tile_storage.set(&tile_pos, tile_entity);
+        }
+    }
+
+    let tile_size = TilemapTileSize { x: 64.0, y: 64.0 };
+    let grid_size = tile_size.into();
+    let map_type = TilemapType::default();
+
+    commands.entity(tilemap_entity).insert(TilemapBundle {
+        grid_size,
+        map_type,
+        size:map_size,
+        storage: tile_storage,
+        texture: TilemapTexture::Single(texture_handle),
+        tile_size,
+        transform: get_tilemap_center_transform(&map_size, &grid_size, &map_type, 0.0),
+        ..Default::default()
+    });
+
+    #[cfg(all(not(feature = "atlas"), feature = "render"))]
+    {
+        array_texture_loader.add(TilemapArrayTexture {
+            texture: TilemapTexture::Single(asset_server.load("spritesheet/spritesheet_tiles.png")),
+            tile_size,
+            ..Default::default()
+        });
+    }
 
     commands.spawn((
         SpriteBundle {
             texture: asset_server.load("sprites/manRed_gun.png"),
+            transform: Transform::from_translation(Vec3::new(0.,0.,1.)),
             sprite: Sprite {
                 flip_x: true,
                 ..default()
@@ -65,14 +122,17 @@ fn setup_game(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>, mut mate
 
     commands.spawn((SpriteBundle {
         texture: asset_server.load("sprites/zoimbie1_hold.png"),
-        transform: Transform::from_translation(Vec3::new(150., 0., 0.)),
+        transform: Transform::from_translation(Vec3::new(150., 0., 1.)),
         ..default()
     },
     Zombie));
 
 }
 
-fn move_player(keyboard_input: Res<Input<KeyCode>>, mut query: Query<(&mut Transform, &mut Movement), With<Player>>,) {
+fn move_player(keyboard_input: Res<Input<KeyCode>>, 
+    mut query: Query<(&mut Transform, &mut Movement), With<Player>>,
+    mut cameras: Query<&mut Transform, (With<CameraMaker>, Without<Player>)>
+) {
     if let Ok((mut player_transform, mut player_movement)) = query.get_single_mut() {
         let mut xdirection = 0.0;
         let mut ydirection = 0.0;
@@ -108,6 +168,10 @@ fn move_player(keyboard_input: Res<Input<KeyCode>>, mut query: Query<(&mut Trans
         player_transform.translation.y = player_transform.translation.y + ydirection;
         player_transform.translation.x = player_transform.translation.x + xdirection;
 
+        for mut camera in &mut cameras {
+            camera.translation.x = player_transform.translation.x;
+            camera.translation.y = player_transform.translation.y;
+        }
     }
 
 }
@@ -247,6 +311,7 @@ fn despawn_bullet(
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
+        .add_plugins(TilemapPlugin)
         .add_systems(Startup, setup_game)
         .add_systems(Update, (move_player, player_shoot, move_bullet, move_zombies, zombie_player_collision, zombie_bullet_collision, despawn_bullet))
         .run();
