@@ -7,16 +7,6 @@ pub mod zombies;
 pub mod camera;
 pub mod bullet;
 
-#[derive(Component)]
-struct Collider;
-
-#[derive(Component)]
-struct Name(String);
-
-const TIME_STEP: f32 = 1.0/60.0;
-const PLAYER_SPEED: f32 = 100.0;
-
-// ResMut is a mutable resource
 
 fn setup_game(
     mut commands: Commands,
@@ -77,8 +67,7 @@ fn setup_game(
         player::Player,
         movement::Movement {
             last_movement: movement::Direction::UP,
-        },
-        Collider,
+        }
     ));
 
     commands.spawn((SpriteBundle {

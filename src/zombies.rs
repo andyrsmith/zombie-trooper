@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 use std::f32::consts::PI;
-use crate::movement;
 use crate::player;
 use crate::bullet;
 
@@ -9,9 +8,9 @@ const ZOMBIE_RADIUS: f32 = 15.;
 #[derive(Component)]
 pub struct Zombie;
 
-pub fn move_zombies(mut player_query: Query<(&Transform, &movement::Movement), (With<player::Player>, Without<Zombie>)>, mut zombie_query: Query<&mut Transform, (With<Zombie>, Without<player::Player>)>) {
+pub fn move_zombies(mut player_query: Query<&Transform, (With<player::Player>, Without<Zombie>)>, mut zombie_query: Query<&mut Transform, (With<Zombie>, Without<player::Player>)>) {
 
-    if let Ok((player_transform, player_movement)) = player_query.get_single_mut() {
+    if let Ok(player_transform) = player_query.get_single_mut() {
         for mut transform in &mut zombie_query {
             const ZOMBIE_SPEED: f32 = 0.5;
             if player_transform.translation.x > transform.translation.x {

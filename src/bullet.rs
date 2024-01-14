@@ -27,7 +27,7 @@ pub fn despawn_bullet(
     bullet_query: Query<(Entity, &player::Distance), With<Bullet>>
 ) {
     for(bullet_entity, bullet_distance) in &bullet_query {
-        if(bullet_distance.distance_travel > bullet_distance.distance_despawn) {
+        if bullet_distance.distance_travel > bullet_distance.distance_despawn {
             commands.entity(bullet_entity).despawn();
         }
     }
