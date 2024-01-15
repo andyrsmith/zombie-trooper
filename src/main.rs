@@ -1,11 +1,11 @@
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 
-pub mod player;
-pub mod movement;
-pub mod zombies;
-pub mod camera;
-pub mod bullet;
+mod player;
+mod movement;
+mod zombies;
+mod camera;
+mod bullet;
 
 
 fn setup_game(
