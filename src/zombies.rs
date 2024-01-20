@@ -1,5 +1,8 @@
 use bevy::prelude::*;
 use std::f32::consts::PI;
+use rand::Rng;
+use crate::ImageCache;
+use crate::ZombieWave;
 use crate::player;
 use crate::bullet;
 
@@ -80,6 +83,40 @@ pub fn zombie_bullet_collision(
                 println!("Zombie Shot!");
                 commands.entity(bullet_entity).despawn();
                 commands.entity(zombie_entity).despawn();
+            }
+
+        }
+    }
+
+}
+
+pub fn next_zombie_wave(
+    mut commands: Commands,
+    mut player_query: Query<&Transform, With<player::Player>>,
+    zombie_query: Query<Entity, With<Zombie>>,
+    image_cache: Res<ImageCache>,
+    mut zombie_wave: ResMut<ZombieWave>
+) {
+
+    let no_zombies = zombie_query.is_empty();
+    println!("{:?}", zombie_wave.0);
+
+    if let Ok(player_transform) = player_query.get_single_mut() {
+        let player_x = player_transform.translation.x;
+        let player_y = player_transform.translation.y;
+
+        if no_zombies {
+            zombie_wave.0 += 1;
+            //zombie spawns but disapears.  Entity is still there just not graphic
+            for n in 0..zombie_wave.0 {
+                let x_pos = rand::thread_rng().gen_range(-275..=275) as f32;
+                let y_pos = rand::thread_rng().gen_range(-275..=275) as f32; 
+                commands.spawn((SpriteBundle {
+                    texture: image_cache.zombie.clone_weak(),
+                    transform: Transform::from_translation(Vec3::new(x_pos + player_x, y_pos + player_y, 1.)),
+                    ..default()
+                },
+                Zombie));
             }
 
         }

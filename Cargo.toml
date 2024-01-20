@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 bevy = "0.11"
 bevy_ecs_tilemap = "0.11.*"
+rand = "0.8.5"
 
 [workspace] 
 resolver = "2" 

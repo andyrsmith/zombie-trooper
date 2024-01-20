@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use crate::movement;
 use crate::player;
 
-pub const BULLET_RADIUS: f32 = 1.;
+pub const BULLET_RADIUS: f32 = 2.;
 
 #[derive(Component)]
 pub struct Bullet;

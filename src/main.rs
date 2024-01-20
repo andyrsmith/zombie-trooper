@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, ui::debug};
 use bevy_ecs_tilemap::prelude::*;
 
 mod player;
@@ -6,6 +6,14 @@ mod movement;
 mod zombies;
 mod camera;
 mod bullet;
+
+#[derive(Resource)]
+struct ImageCache {
+    zombie: Handle<Image>,
+}
+
+#[derive(Resource, Debug)]
+struct ZombieWave(i32);
 
 
 fn setup_game(
@@ -71,7 +79,7 @@ fn setup_game(
     ));
 
     commands.spawn((SpriteBundle {
-        texture: asset_server.load("sprites/zoimbie1_hold.png"),
+        texture: asset_server.load("sprites/zoimbie1_hold.png").clone_weak(),
         transform: Transform::from_translation(Vec3::new(150., 0., 1.)),
         ..default()
     },
@@ -79,12 +87,25 @@ fn setup_game(
 
 }
 
+fn load_and_cache_images(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>
+) {
+    println!("Adding Resource");
+    commands.insert_resource(ImageCache {
+        zombie: asset_server.load("sprites/zoimbie1_hold.png")
+    });
+}
+
+
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(TilemapPlugin)
+        .insert_resource(ZombieWave(1))
+        .add_systems(Startup, load_and_cache_images)
         .add_systems(Startup, setup_game)
-        .add_systems(Update, (player::move_player, camera::update_camera, player::player_shoot, bullet::move_bullet, zombies::move_zombies, zombies::zombie_player_collision, zombies::zombie_bullet_collision, bullet::despawn_bullet))
+        .add_systems(Update, (player::move_player, camera::update_camera, player::player_shoot, bullet::move_bullet, zombies::move_zombies, zombies::zombie_player_collision, zombies::zombie_bullet_collision, bullet::despawn_bullet, zombies::next_zombie_wave))
         .run();
 }
 
