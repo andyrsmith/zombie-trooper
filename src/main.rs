@@ -1,4 +1,4 @@
-use bevy::{prelude::*, ui::debug};
+use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 
 mod player;
@@ -6,6 +6,14 @@ mod movement;
 mod zombies;
 mod camera;
 mod bullet;
+
+#[derive(States, Debug, Default, Clone, Eq, PartialEq, Hash)]
+pub enum GameState {
+    #[default]
+    Start,
+    Playing,
+    GameOver,
+}
 
 #[derive(Resource)]
 struct ImageCache {
@@ -15,6 +23,8 @@ struct ImageCache {
 #[derive(Resource, Debug)]
 struct ZombieWave(i32);
 
+#[derive(Component)]
+struct MainMenu;
 
 fn setup_game(
     mut commands: Commands,
@@ -97,15 +107,63 @@ fn load_and_cache_images(
     });
 }
 
+fn main_menu(mut commands: Commands) {
+    let text_style = TextStyle {
+        font_size: 20.,
+        ..default()
+    };
+    commands.spawn((NodeBundle {
+        style: Style {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            flex_direction: FlexDirection::Column,
+            justify_content: JustifyContent::Center,
+            align_content: AlignContent::Center,
+            align_items: AlignItems::Center,
+            row_gap: Val::Px(50.),
+            ..default()
+        },
+        ..default()
+    }))
+    .with_children(|parent| {
+        parent.spawn((TextBundle::from_sections([
+            TextSection::new("Zombie Trooper", text_style.clone()),
+        ]), MainMenu));
+        parent.spawn((TextBundle::from_sections([
+            TextSection::new("AWSD to move, spacebar to shoot", text_style.clone()),
+        ]), MainMenu));
+        parent.spawn((TextBundle::from_sections([
+            TextSection::new("Press Enter to Start", text_style.clone()),
+        ]), MainMenu));
+    });
+}
+
+fn check_start(keyboard_input: Res<Input<KeyCode>>, 
+    query: Query<Entity, With<MainMenu>>, 
+    mut commands: Commands,
+    mut app_state: ResMut<NextState<GameState>>,
+) {
+    if keyboard_input.pressed(KeyCode::Return) {
+        for text in &query {
+            commands.entity(text).despawn_recursive();
+        }
+        app_state.set(GameState::Playing);
+    }
+}
+
 
 fn main() {
     App::new()
+        .add_state::<GameState>()
         .add_plugins(DefaultPlugins)
         .add_plugins(TilemapPlugin)
         .insert_resource(ZombieWave(1))
         .add_systems(Startup, load_and_cache_images)
         .add_systems(Startup, setup_game)
-        .add_systems(Update, (player::move_player, camera::update_camera, player::player_shoot, bullet::move_bullet, zombies::move_zombies, zombies::zombie_player_collision, zombies::zombie_bullet_collision, bullet::despawn_bullet, zombies::next_zombie_wave))
+        .add_systems(Startup, (main_menu).run_if(in_state(GameState::Start)))
+        .add_systems(Update, (check_start).run_if(in_state(GameState::Start)))
+        .add_systems(Update, (player::move_player, camera::update_camera, player::player_shoot, bullet::move_bullet, zombies::move_zombies, zombies::zombie_player_collision, zombies::zombie_bullet_collision, bullet::despawn_bullet, zombies::next_zombie_wave).run_if(in_state(GameState::Playing)))
         .run();
 }
+
 

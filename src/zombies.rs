@@ -99,7 +99,6 @@ pub fn next_zombie_wave(
 ) {
 
     let no_zombies = zombie_query.is_empty();
-    println!("{:?}", zombie_wave.0);
 
     if let Ok(player_transform) = player_query.get_single_mut() {
         let player_x = player_transform.translation.x;
@@ -108,7 +107,7 @@ pub fn next_zombie_wave(
         if no_zombies {
             zombie_wave.0 += 1;
             //zombie spawns but disapears.  Entity is still there just not graphic
-            for n in 0..zombie_wave.0 {
+            for _n in 0..zombie_wave.0 {
                 let x_pos = rand::thread_rng().gen_range(-275..=275) as f32;
                 let y_pos = rand::thread_rng().gen_range(-275..=275) as f32; 
                 commands.spawn((SpriteBundle {
