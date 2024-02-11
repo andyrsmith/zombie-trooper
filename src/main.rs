@@ -1,5 +1,6 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, window::close_on_esc};
 use bevy_ecs_tilemap::prelude::*;
+use zombies::Zombie;
 
 mod player;
 mod movement;
@@ -25,6 +26,9 @@ struct ZombieWave(i32);
 
 #[derive(Component)]
 struct MainMenu;
+
+#[derive(Component)]
+struct GameOverMessage;
 
 fn setup_game(
     mut commands: Commands,
@@ -97,6 +101,7 @@ fn setup_game(
 
 }
 
+
 fn load_and_cache_images(
     mut commands: Commands,
     asset_server: Res<AssetServer>
@@ -151,6 +156,80 @@ fn check_start(keyboard_input: Res<Input<KeyCode>>,
     }
 }
 
+fn game_over(mut commands: Commands,
+    keyboard_input: Res<Input<KeyCode>>, 
+    query: Query<Entity, With<GameOverMessage>>,
+    mut app_state: ResMut<NextState<GameState>>,
+    mut zombie_query: Query<(Entity), With<zombies::Zombie>>,
+    asset_server: Res<AssetServer>,
+    mut zombie_wave: ResMut<ZombieWave>) {
+    let text_style = TextStyle {
+        font_size: 20.,
+        ..default()
+    };
+
+    if query.is_empty() {
+        commands.spawn((NodeBundle {
+            style: Style {
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                flex_direction: FlexDirection::Column,
+                justify_content: JustifyContent::Center,
+                align_content: AlignContent::Center,
+                align_items: AlignItems::Center,
+                row_gap: Val::Px(50.),
+                ..default()
+            },
+            ..default()
+        }))
+        .with_children(|parent| {
+            parent.spawn((TextBundle::from_sections([
+                TextSection::new("Game Over", text_style.clone()),
+            ]), GameOverMessage));
+            parent.spawn((TextBundle::from_sections([
+                TextSection::new("Press Enter to restart", text_style.clone()),
+            ]), GameOverMessage));
+            parent.spawn((TextBundle::from_sections([
+                TextSection::new("Press ESC to quit", text_style.clone()),
+            ]), GameOverMessage));
+        });
+    }
+
+    if keyboard_input.pressed(KeyCode::Return) {
+        for text in &query {
+            commands.entity(text).despawn_recursive();
+        }
+
+        for zombie_entity in &zombie_query {
+            commands.entity(zombie_entity).despawn();
+        }
+        commands.spawn((
+            SpriteBundle {
+                texture: asset_server.load("sprites/manRed_gun.png"),
+                transform: Transform::from_translation(Vec3::new(0.,0.,1.)),
+                sprite: Sprite {
+                    flip_x: true,
+                    ..default()
+                },
+                ..default()
+            },
+            player::Player,
+            movement::Movement {
+                last_movement: movement::Direction::UP,
+            }
+        ));
+    
+        commands.spawn((SpriteBundle {
+            texture: asset_server.load("sprites/zoimbie1_hold.png").clone_weak(),
+            transform: Transform::from_translation(Vec3::new(150., 0., 1.)),
+            ..default()
+        },
+        zombies::Zombie));
+        zombie_wave.0 = 1;
+        app_state.set(GameState::Playing);
+    }
+
+}
 
 fn main() {
     App::new()
@@ -163,6 +242,8 @@ fn main() {
         .add_systems(Startup, (main_menu).run_if(in_state(GameState::Start)))
         .add_systems(Update, (check_start).run_if(in_state(GameState::Start)))
         .add_systems(Update, (player::move_player, camera::update_camera, player::player_shoot, bullet::move_bullet, zombies::move_zombies, zombies::zombie_player_collision, zombies::zombie_bullet_collision, bullet::despawn_bullet, zombies::next_zombie_wave).run_if(in_state(GameState::Playing)))
+        .add_systems(Update, (game_over).run_if(in_state(GameState::GameOver)))
+        .add_systems(Update, close_on_esc)
         .run();
 }
 

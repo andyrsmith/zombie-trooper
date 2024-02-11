@@ -5,6 +5,7 @@ use crate::ImageCache;
 use crate::ZombieWave;
 use crate::player;
 use crate::bullet;
+use crate::GameState;
 
 const ZOMBIE_RADIUS: f32 = 15.;
 
@@ -57,7 +58,8 @@ pub fn move_zombies(mut player_query: Query<&Transform, (With<player::Player>, W
 pub fn zombie_player_collision(
     mut commands: Commands,
     mut player_query: Query<(Entity, &Transform), With<player::Player>>,
-    zombie_query: Query<&Transform, With<Zombie>>
+    zombie_query: Query<&Transform, With<Zombie>>,
+    mut app_state: ResMut<NextState<GameState>>,
 ) {
     if let Ok((player_entity, player_transform)) = player_query.get_single_mut() {
         for transform in &zombie_query {
@@ -66,6 +68,7 @@ pub fn zombie_player_collision(
             if distance < player_radius + ZOMBIE_RADIUS {
                 println!("Game Over");
                 commands.entity(player_entity).despawn();
+                app_state.set(GameState::GameOver);
             }
         }
     }
@@ -80,7 +83,6 @@ pub fn zombie_bullet_collision(
         for (zombie_entity, zombie_transform) in &zombie_query {
             let distance = bullet_transform.translation.distance(zombie_transform.translation);
             if distance < ZOMBIE_RADIUS + bullet::BULLET_RADIUS {
-                println!("Zombie Shot!");
                 commands.entity(bullet_entity).despawn();
                 commands.entity(zombie_entity).despawn();
             }
