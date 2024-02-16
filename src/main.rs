@@ -1,6 +1,5 @@
 use bevy::{prelude::*, window::close_on_esc};
 use bevy_ecs_tilemap::prelude::*;
-use zombies::Zombie;
 
 mod player;
 mod movement;
@@ -157,12 +156,7 @@ fn check_start(keyboard_input: Res<Input<KeyCode>>,
 }
 
 fn game_over(mut commands: Commands,
-    keyboard_input: Res<Input<KeyCode>>, 
-    query: Query<Entity, With<GameOverMessage>>,
-    mut app_state: ResMut<NextState<GameState>>,
-    mut zombie_query: Query<(Entity), With<zombies::Zombie>>,
-    asset_server: Res<AssetServer>,
-    mut zombie_wave: ResMut<ZombieWave>) {
+    query: Query<Entity, With<GameOverMessage>>) {
     let text_style = TextStyle {
         font_size: 20.,
         ..default()
@@ -194,7 +188,16 @@ fn game_over(mut commands: Commands,
             ]), GameOverMessage));
         });
     }
+}
 
+fn listen_for_restart(mut commands: Commands,
+    keyboard_input: Res<Input<KeyCode>>,   
+    query: Query<Entity, With<GameOverMessage>>,
+    mut app_state: ResMut<NextState<GameState>>,
+    zombie_query: Query<(Entity), With<zombies::Zombie>>,
+    asset_server: Res<AssetServer>,
+    mut zombie_wave: ResMut<ZombieWave>
+) {
     if keyboard_input.pressed(KeyCode::Return) {
         for text in &query {
             commands.entity(text).despawn_recursive();
@@ -228,7 +231,6 @@ fn game_over(mut commands: Commands,
         zombie_wave.0 = 1;
         app_state.set(GameState::Playing);
     }
-
 }
 
 fn main() {
@@ -242,7 +244,7 @@ fn main() {
         .add_systems(Startup, (main_menu).run_if(in_state(GameState::Start)))
         .add_systems(Update, (check_start).run_if(in_state(GameState::Start)))
         .add_systems(Update, (player::move_player, camera::update_camera, player::player_shoot, bullet::move_bullet, zombies::move_zombies, zombies::zombie_player_collision, zombies::zombie_bullet_collision, bullet::despawn_bullet, zombies::next_zombie_wave).run_if(in_state(GameState::Playing)))
-        .add_systems(Update, (game_over).run_if(in_state(GameState::GameOver)))
+        .add_systems(Update, (game_over, listen_for_restart).run_if(in_state(GameState::GameOver)))
         .add_systems(Update, close_on_esc)
         .run();
 }
