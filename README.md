@@ -6,7 +6,7 @@ This game is programmed in Rust using the Bevy game engine.  The main purpose of
 
 ## How to Make the Game
 
-You will need to have Rust and Cargo installed locally to make the game.
+You will need to have Rust and Cargo installed locally to make the game.  This was originally written in Rust version 1.74 and Bevy 0.11.
 
 You can refer to here on how to install Rust and Cargo (Install Rust)[https://www.rust-lang.org/tools/install]
 
@@ -21,11 +21,3 @@ cargo run
 ## How to Play
 
 Use the WSAD keys to move the player and the space bar to shoot.
-
-## TODO
-
-This game is just meant to be a small game to get me familer with Bevy so it will be a fairly small game but there are few other features I want to add before calling it done.
-
-- [ ] More Zombies.  I said there would be waves of zombies but right now it's just one.
-- [ ] UI.  Indication that you are entering a new wave of zombies.  Game Over screen.
-- [ ] Restart and Quit the game.
