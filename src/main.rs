@@ -23,11 +23,18 @@ struct ImageCache {
 #[derive(Resource, Debug)]
 struct ZombieWave(i32);
 
+#[derive(Resource, Debug)]
+struct ZombieScore(i32);
+
+
 #[derive(Component)]
 struct MainMenu;
 
 #[derive(Component)]
 struct GameOverMessage;
+
+#[derive(Component)]
+struct ZombieCounter;
 
 fn setup_game(
     mut commands: Commands,
@@ -111,11 +118,33 @@ fn load_and_cache_images(
     });
 }
 
-fn main_menu(mut commands: Commands) {
+fn main_menu(mut commands: Commands,
+    zombie_score: ResMut<ZombieScore>) {
     let text_style = TextStyle {
         font_size: 20.,
         ..default()
     };
+
+    commands.spawn((
+        TextBundle {
+            text: Text::from_section(
+                format!("Zombies: {0}", zombie_score.0), 
+                TextStyle {
+                    font_size: 25.0,
+                    ..default()
+                },
+            ),
+            ..default()
+        }.with_style(Style {
+            position_type: PositionType::Absolute,
+            top: Val::Px(5.0),
+            left: Val::Px(30.0),
+            width: Val:: Percent(80.),
+            align_content: AlignContent::Center,
+            align_items: AlignItems::Center,
+            ..default()
+        }), ZombieCounter));
+
     commands.spawn((NodeBundle {
         style: Style {
             width: Val::Percent(100.0),
@@ -196,7 +225,9 @@ fn listen_for_restart(mut commands: Commands,
     mut app_state: ResMut<NextState<GameState>>,
     zombie_query: Query<(Entity), With<zombies::Zombie>>,
     asset_server: Res<AssetServer>,
-    mut zombie_wave: ResMut<ZombieWave>
+    mut zombie_wave: ResMut<ZombieWave>,
+    mut zombie_score_text: Query<&mut Text, With<ZombieCounter>>,
+    mut zombie_score: ResMut<ZombieScore>
 ) {
     if keyboard_input.pressed(KeyCode::Return) {
         for text in &query {
@@ -230,6 +261,11 @@ fn listen_for_restart(mut commands: Commands,
         zombies::Zombie));
         zombie_wave.0 = 1;
         app_state.set(GameState::Playing);
+
+        zombie_score.0 = 0;
+        if let Ok(mut text) = zombie_score_text.get_single_mut() {
+            text.sections[0].value = format!("Zombies: {0}", zombie_score.0);
+        }
     }
 }
 
@@ -239,6 +275,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugins(TilemapPlugin)
         .insert_resource(ZombieWave(1))
+        .insert_resource(ZombieScore(0))
         .add_systems(Startup, load_and_cache_images)
         .add_systems(Startup, setup_game)
         .add_systems(Startup, (main_menu).run_if(in_state(GameState::Start)))

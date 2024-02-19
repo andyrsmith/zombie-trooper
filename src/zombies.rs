@@ -2,6 +2,8 @@ use bevy::prelude::*;
 use std::f32::consts::PI;
 use rand::Rng;
 use crate::ImageCache;
+use crate::ZombieCounter;
+use crate::ZombieScore;
 use crate::ZombieWave;
 use crate::player;
 use crate::bullet;
@@ -77,7 +79,9 @@ pub fn zombie_player_collision(
 pub fn zombie_bullet_collision(
     mut commands: Commands,
     bullet_query: Query<(Entity, &Transform), With<bullet::Bullet>>,
-    zombie_query: Query<(Entity, &Transform), With<Zombie>>
+    zombie_query: Query<(Entity, &Transform), With<Zombie>>,
+    mut zombie_score_text: Query<&mut Text, With<ZombieCounter>>,
+    mut zombie_score: ResMut<ZombieScore>
 ) {
     for (bullet_entity, bullet_transform) in &bullet_query {
         for (zombie_entity, zombie_transform) in &zombie_query {
@@ -85,6 +89,11 @@ pub fn zombie_bullet_collision(
             if distance < ZOMBIE_RADIUS + bullet::BULLET_RADIUS {
                 commands.entity(bullet_entity).despawn();
                 commands.entity(zombie_entity).despawn();
+                zombie_score.0 += 1;
+
+                if let Ok(mut text) = zombie_score_text.get_single_mut() {
+                    text.sections[0].value = format!("Zombies: {0}", zombie_score.0);
+                }
             }
 
         }

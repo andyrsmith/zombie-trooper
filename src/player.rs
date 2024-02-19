@@ -13,7 +13,6 @@ pub struct Distance {
     pub distance_despawn: i32
 }
 
-
 pub fn move_player(
     keyboard_input: Res<Input<KeyCode>>, 
     mut query: Query<(&mut Transform, &mut movement::Movement), With<Player>>
