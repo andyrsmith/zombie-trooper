@@ -8,7 +8,7 @@ This game is programmed in Rust using the Bevy game engine.  The main purpose of
 
 You will need to have Rust and Cargo installed locally to make the game.  This was originally written in Rust version 1.74 and Bevy 0.11.
 
-You can refer to here on how to install Rust and Cargo (Install Rust)[https://www.rust-lang.org/tools/install]
+You can refer to here on how to install Rust and Cargo [Install Rust](https://www.rust-lang.org/tools/install)
 
 Once Rust and Cargo is install you can make the game by running the command in your terminal.
 
